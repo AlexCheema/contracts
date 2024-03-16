@@ -18,9 +18,113 @@ interface IOracle {
 
 interface IBenchmark {
     function prompt() external view returns (string memory);
-    function evaluate(string memory prompt, string memory response) external view returns (uint);
+    function evaluate(string memory prompt, string memory response) external view returns (uint32);
     function description() external view returns (string memory);
+    function id() external view returns (string memory);
 }
+
+struct BenchmarkRun {
+    string prompt;
+    string response;
+    uint32 score;
+    uint32 blockTimestamp;
+}
+struct BenchmarkResults {
+    BenchmarkRun[] runs;
+    uint64 scoreSum;
+}
+struct BenchmarkGroup {
+    IBenchmark[] benchmarks;
+    BenchmarkResults results;
+}
+
+contract LLMDrift {
+    BenchmarkGroup[] benchmarkGroups;
+
+    address private owner;
+    address public oracleAddress;
+
+    event OracleAddressUpdated(address indexed newOracleAddress);
+
+    constructor(
+        address initialOracleAddress
+    ) {
+        owner = msg.sender;
+        oracleAddress = initialOracleAddress;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Caller is not owner");
+        _;
+    }
+
+    modifier onlyOracle() {
+        require(msg.sender == oracleAddress, "Caller is not oracle");
+        _;
+    }
+
+    function setOracleAddress(address newOracleAddress) public onlyOwner {
+        oracleAddress = newOracleAddress;
+        emit OracleAddressUpdated(newOracleAddress);
+    }
+
+    function addBenchmarkGroup(BenchmarkGroup calldata benchmarkGroup) public onlyOwner {
+        benchmarkGroups.push(benchmarkGroup);
+    }
+    function getBenchmarkGroups() public view returns (BenchmarkGroup[] memory) {
+        return benchmarkGroups;
+    }
+
+    function onOracleLlmResponse(
+        uint promptId,
+        string memory response,
+        string memory errorMessage
+    ) public onlyOracle {
+        uint i = promptId / 2153;
+        uint j = promptId % 2153;
+
+        IBenchmark benchmark = benchmarkGroups[i].benchmarks[j];
+
+        uint32 score = benchmark.evaluate(benchmark.prompt(), response);
+
+        BenchmarkRun memory newRun = BenchmarkRun(benchmark.prompt(), response, score, uint32(block.timestamp));
+        benchmarkGroups[i].results.runs.push(newRun);
+        benchmarkGroups[i].results.scoreSum += score;
+    }
+
+    function getSystemPrompt() public view returns (string memory) {
+        return "You are a helpful assistant.";
+    }
+
+    function getMessageHistoryContents(uint chatId) public view returns (string[] memory) {
+        string[] memory messages = new string[](1);
+
+        uint i = chatId / 2153;
+        uint j = chatId % 2153;
+
+        messages[0] = benchmarkGroups[i].benchmarks[j].prompt();
+
+        return messages;
+    }
+
+    function getMessageHistoryRoles(uint chatId) public view returns (string[] memory) {
+        string[] memory messages = new string[](1);
+        messages[0] = "user";
+        return messages;
+    }
+
+    function fireBenchmarks() public returns (bool) {
+        for (uint i = 0; i < benchmarkGroups.length; i++) {
+            BenchmarkGroup memory group = benchmarkGroups[i];
+            for (uint j = 0; j < group.benchmarks.length; j++) {
+                IOracle(oracleAddress).createLlmCall(2153 * i + j);
+            }
+        }
+
+        return false;
+    }
+}
+
 contract PrimeBenchmark is IBenchmark {
     uint32 private n;
     bool private isPrime;
@@ -38,7 +142,11 @@ contract PrimeBenchmark is IBenchmark {
         return string(abi.encodePacked("Evaluates the LLM to check that ", uintToString(n), isPrime ? " is" : " is not", " prime."));
     }
 
-    function evaluate(string memory prompt, string memory response) external view override returns (uint) {
+    function id() external view override returns (string memory) {
+        return string(abi.encodePacked("PrimeBenchmark", uintToString(n), isPrime ? "Is" : "IsNot", "Prime"));
+    }
+
+    function evaluate(string memory prompt, string memory response) external view override returns (uint32) {
         bool containsYes = contains(response, "[Yes]");
         bool containsNo = contains(response, "[No]");
 

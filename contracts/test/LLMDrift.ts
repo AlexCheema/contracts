@@ -7,7 +7,7 @@ interface BenchmarkTests {
   desc: string;
   contractName: string;
   deployArgs: any[];
-  tableTests: Array<PromptTestCase | EvaluateTestCase | DescriptionTestCase>;
+  tableTests: Array<PromptTestCase | EvaluateTestCase | IdTestCase | DescriptionTestCase>;
 }
 interface PromptTestCase {
   desc: string;
@@ -16,6 +16,10 @@ interface PromptTestCase {
 interface DescriptionTestCase {
   desc: string;
   expectedDescription: string;
+}
+interface IdTestCase {
+  desc: string;
+  expectedId: string;
 }
 interface EvaluateTestCase {
   desc: string;
@@ -41,6 +45,11 @@ const tests: BenchmarkTests[] = [
         desc: "description correct",
 
         expectedDescription: `Evaluates the LLM to check that ${11} is prime.`
+      },
+      {
+        desc: "id correct",
+
+        expectedId: `PrimeBenchmark${11}IsPrime`
       },
       {
         desc: "Exact [Yes] gives 100",
@@ -86,39 +95,89 @@ const tests: BenchmarkTests[] = [
   }
 ]
 
-for (const t of tests) {
-  const { desc, contractName, deployArgs, tableTests } = t;
-  describe(`LLMDrift [Contract: ${contractName}] ${desc}`, () => {
-    // We define a fixture to reuse the same setup in every test.
-    // We use loadFixture to run this setup once, snapshot that state,
-    // and reset Hardhat Network to that snapshot in every test.
-    async function deploy() {
-      // Contracts are deployed using the first signer/account by default
-      const allSigners = await ethers.getSigners();
-      const owner = allSigners[0];
+describe("LLMDrift", () => {
 
-      const TBenchmark = await ethers.getContractFactory(contractName);
-      const benchmark = (await TBenchmark.deploy(...deployArgs)) as IBenchmark;
+  for (const t of tests) {
+    const { desc, contractName, deployArgs, tableTests } = t;
+    describe(`[Contract: ${contractName}] ${desc}`, () => {
+      // We define a fixture to reuse the same setup in every test.
+      // We use loadFixture to run this setup once, snapshot that state,
+      // and reset Hardhat Network to that snapshot in every test.
+      async function deploy() {
+        // Contracts are deployed using the first signer/account by default
+        const allSigners = await ethers.getSigners();
+        const owner = allSigners[0];
 
-      return {benchmark, owner, allSigners};
-    }
+        const TBenchmark = await ethers.getContractFactory(contractName);
+        const benchmark = (await TBenchmark.deploy(...deployArgs)) as IBenchmark;
 
-    for (const tc of tableTests) {
-      it(`${tc.desc}`, async () => {
-        const {benchmark, owner, allSigners} = await loadFixture(deploy);
+        return {benchmark, owner, allSigners};
+      }
 
-        if ("expectedPrompt" in tc) {
-          expect(await benchmark.prompt()).to.equal(tc.expectedPrompt);
-        }
+      for (const tc of tableTests) {
+        it(`${tc.desc}`, async () => {
+          const {benchmark, owner, allSigners} = await loadFixture(deploy);
 
-        if ("expectedDescription" in tc) {
-          expect(await benchmark.description()).to.equal(tc.expectedDescription);
-        }
+          if ("expectedPrompt" in tc) {
+            expect(await benchmark.prompt()).to.equal(tc.expectedPrompt);
+          }
 
-        if ("prompt" in tc) {
-          expect(await benchmark.evaluate(tc.prompt, tc.response)).to.equal(tc.expectedScore);
-        }
-      });
-    }
-  })
-}
+          if ("expectedDescription" in tc) {
+            expect(await benchmark.description()).to.equal(tc.expectedDescription);
+          }
+
+          if ("prompt" in tc) {
+            expect(await benchmark.evaluate(tc.prompt, tc.response)).to.equal(tc.expectedScore);
+          }
+        });
+      }
+    })
+  }
+
+  describe("Integration", function () {
+      // We define a fixture to reuse the same setup in every test.
+      // We use loadFixture to run this setup once, snapshot that state,
+      // and reset Hardhat Network to that snapshot in every test.
+      async function deploy() {
+        // Contracts are deployed using the first signer/account by default
+        const allSigners = await ethers.getSigners();
+        const owner = allSigners[0];
+
+        const AgentOracle = await ethers.getContractFactory("ChatOracle");
+        const oracle = await AgentOracle.deploy();
+        // Add owner to whitelist for these tests
+        await oracle.updateWhitelist(owner.address, true);
+
+        const LLMDrift = await ethers.getContractFactory("LLMDrift");
+        const llmDrift = (await LLMDrift.deploy(oracle.target));
+
+        return {llmDrift, oracle, owner, allSigners};
+      }
+
+    it("Should return system prompt", async () => {
+      const {llmDrift, oracle, owner, allSigners} = await loadFixture(deploy);
+
+        const TBenchmark = await ethers.getContractFactory("PrimeBenchmark");
+        const benchmark = (await TBenchmark.deploy(11, true)) as IBenchmark;
+
+        await llmDrift.addBenchmarkGroup({
+          benchmarks: [await benchmark.getAddress()],
+          results: {
+            runs: [],
+            scoreSum: 0
+          }
+        })
+
+        await llmDrift.fireBenchmarks();
+
+        const oracleAccount = allSigners[6];
+        await oracle.updateWhitelist(oracleAccount, true);
+
+        await oracle.connect(oracleAccount).addResponse(0, 0, "oracle response\n", "");
+
+        const bgs = await llmDrift.getBenchmarkGroups();
+        // console.log(bgs[0].results);
+    });
+  });
+
+});
