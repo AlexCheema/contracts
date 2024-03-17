@@ -5,7 +5,7 @@ const fireBenchmarks = process.env.FIRE_BENCHMARKS == "true";
 
 async function runLLMDrift() {
     // const oracleContractAddress = "0xACB8a1fcC06f1a199C1782414E39BdB4A8238e69";
-    const llmDriftContractAddress = "0x4016B430812c44B7496BdDa04B1faf88e0298C82";
+    const llmDriftContractAddress = "0xc38Dc0b25E3Ad903C3620E3005765c6c2D95710C";
     const llmDriftContractABI = [
         "function fireBenchmarks()",
         "event BenchmarkResultAdded(uint benchmarkGroupId, string prompt, string response, uint32 score, uint32 blockTimestamp, uint64 scoreSum)",
