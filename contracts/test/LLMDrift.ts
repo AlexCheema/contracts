@@ -154,14 +154,20 @@ describe("LLMDrift", () => {
         return {llmDrift, oracle, owner, allSigners};
       }
 
-    it("Should return system prompt", async () => {
+    it("should run benchmarks", async () => {
       const {llmDrift, oracle, owner, allSigners} = await loadFixture(deploy);
 
         const TBenchmark = await ethers.getContractFactory("PrimeBenchmark");
-        const benchmark = (await TBenchmark.deploy(11, true)) as IBenchmark;
+        const prime11Benchmark = (await TBenchmark.deploy(11, true)) as IBenchmark;
+        const prime12Benchmark = (await TBenchmark.deploy(12, false)) as IBenchmark;
 
         await llmDrift.addBenchmarkGroup({
-          benchmarks: [await benchmark.getAddress()],
+          name: "test",
+          description: "test benchmark group",
+          benchmarks: [
+            await prime11Benchmark.getAddress(),
+            await prime12Benchmark.getAddress(),
+          ],
           results: {
             runs: [],
             scoreSum: 0
@@ -173,10 +179,31 @@ describe("LLMDrift", () => {
         const oracleAccount = allSigners[6];
         await oracle.updateWhitelist(oracleAccount, true);
 
-        await oracle.connect(oracleAccount).addResponse(0, 0, "oracle response\n", "");
+        await oracle.connect(oracleAccount).addResponse(0, 0, "[Yes]", "");
 
-        const bgs = await llmDrift.getBenchmarkGroups();
-        // console.log(bgs[0].results);
+        let bgs = await llmDrift.getBenchmarkGroups();
+        expect(bgs).to.have.length(1);
+        expect(bgs[0].results.runs).to.have.length(1);
+        expect(bgs[0].results.scoreSum).to.equal(100n);
+        expect(bgs[0].results.runs[0].prompt).to.equal(`Is 11 a prime number? Think step by step and then answer "[Yes]" or "[No]".`);
+        expect(bgs[0].results.runs[0].response).to.equal(`[Yes]`);
+        expect(bgs[0].results.runs[0].score).to.equal(100n);
+        expect(bgs[0].results.runs[0].blockTimestamp).to.be.greaterThan(1710630414n);
+
+        await oracle.connect(oracleAccount).addResponse(1, 1, "[No]", "");
+        bgs = await llmDrift.getBenchmarkGroups();
+        expect(bgs).to.have.length(1);
+        expect(bgs[0].results.runs).to.have.length(2);
+        expect(bgs[0].results.scoreSum).to.equal(200n);
+        expect(bgs[0].results.runs[1].prompt).to.equal(`Is 12 a prime number? Think step by step and then answer "[Yes]" or "[No]".`);
+        expect(bgs[0].results.runs[1].response).to.equal(`[No]`);
+        expect(bgs[0].results.runs[1].score).to.equal(100n);
+        expect(bgs[0].results.runs[1].blockTimestamp).to.be.greaterThan(1710630414n);
+
+        await llmDrift.addPrimeBenchmarks();
+        bgs = await llmDrift.getBenchmarkGroups();
+        expect(bgs).to.have.length(2);
+        expect(bgs[1].benchmarks).to.have.length(7);
     });
   });
 

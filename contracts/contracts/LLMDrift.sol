@@ -34,6 +34,8 @@ struct BenchmarkResults {
     uint64 scoreSum;
 }
 struct BenchmarkGroup {
+    string name;
+    string description;
     IBenchmark[] benchmarks;
     BenchmarkResults results;
 }
@@ -45,6 +47,7 @@ contract LLMDrift {
     address public oracleAddress;
 
     event OracleAddressUpdated(address indexed newOracleAddress);
+    event BenchmarkResultAdded(uint benchmarkGroupId, string prompt, string response, uint32 score, uint32 blockTimestamp, uint64 scoreSum);
 
     constructor(
         address initialOracleAddress
@@ -67,6 +70,34 @@ contract LLMDrift {
         oracleAddress = newOracleAddress;
         emit OracleAddressUpdated(newOracleAddress);
     }
+
+    function addPrimeBenchmarks() public onlyOwner {
+        IBenchmark primeBenchmark7 = new PrimeBenchmark(7, true);
+        IBenchmark primeBenchmark8 = new PrimeBenchmark(8, false);
+        IBenchmark primeBenchmark11 = new PrimeBenchmark(11, true);
+        IBenchmark primeBenchmark13 = new PrimeBenchmark(13, true);
+        IBenchmark primeBenchmark12421 = new PrimeBenchmark(12421, true);
+        IBenchmark primeBenchmark51763 = new PrimeBenchmark(51763, false);
+        IBenchmark primeBenchmark86677 = new PrimeBenchmark(86677, true);
+
+        // Create a new BenchmarkGroup directly in storage
+        BenchmarkGroup storage newGroup = benchmarkGroups.push();
+
+        // Initialize the BenchmarkResults struct within the new storage element
+        newGroup.name = "Prime";
+        newGroup.description = "Test the LLMs ability to check if a number is prime.";
+        newGroup.results.scoreSum = 0;
+
+        // Allocate space for benchmarks in storage
+        newGroup.benchmarks.push(primeBenchmark7);
+        newGroup.benchmarks.push(primeBenchmark8);
+        newGroup.benchmarks.push(primeBenchmark11);
+        newGroup.benchmarks.push(primeBenchmark13);
+        newGroup.benchmarks.push(primeBenchmark12421);
+        newGroup.benchmarks.push(primeBenchmark51763);
+        newGroup.benchmarks.push(primeBenchmark86677);
+    }
+
 
     function addBenchmarkGroup(BenchmarkGroup calldata benchmarkGroup) public onlyOwner {
         benchmarkGroups.push(benchmarkGroup);

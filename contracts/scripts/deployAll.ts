@@ -5,11 +5,12 @@ const VITAILIK_PROMPT = "You are a narrator for a text based game set in a futur
 const AGENT_PROMPT ="Answer the following questions as best you can. You have access to the following tools:\n\nweb_search: Use this to lookup information from google search engine.\n\nUse the following format:\n\nQuestion: the input question you must answer\n\nThought: you should always think about what to do\n\nAction: the action to take, should be web_search. \Action Input: the input to the action\nObservation: the result of the action\n... (this Thought/Action/Action Input/Observation can repeat N times)\nThought: I now know the final answer\nFinal Answer: the final answer to the original input question\n\nBegin!\n"
 
 async function main() {
-  const oracleAddress: string = await deployOracle();
-  await deployChatGpt(oracleAddress);
-  await deployDalle(oracleAddress);
-  await deployVitailik(oracleAddress);
-  await deployAgent(oracleAddress);
+  const oracleAddress: string = process.env.ORACLE_ADDRESS ?? (await deployOracle());
+  // await deployChatGpt(oracleAddress);
+  // await deployDalle(oracleAddress);
+  // await deployVitailik(oracleAddress);
+  // await deployAgent(oracleAddress);
+  await deployLLMDrift(oracleAddress);
 }
 
 async function deployOracle(): Promise<string> {
@@ -78,6 +79,16 @@ async function deployVitailik(oracleAddress: string) {
 
   console.log(
     `Vitailik deployed to ${agent.target}`
+  );
+}
+
+async function deployLLMDrift(oracleAddress: string) {
+  const agent = await ethers.deployContract("LLMDrift", [oracleAddress], {});
+
+  await agent.waitForDeployment();
+
+  console.log(
+    `LLMDrift deployed to ${agent.target}`
   );
 }
 
