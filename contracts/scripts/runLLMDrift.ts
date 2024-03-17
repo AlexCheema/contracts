@@ -1,15 +1,17 @@
 const addPrimeBenchmarks = process.env.ADD_PRIME_BENCHMARKS == "true";
+const addCountingHappyNumbersBenchmarks = process.env.ADD_COUNTING_HAPPY_NUMBERS_BENCHMARKS == "true";
 const fireBenchmarks = process.env.FIRE_BENCHMARKS == "true";
 
 
 async function runLLMDrift() {
     // const oracleContractAddress = "0xACB8a1fcC06f1a199C1782414E39BdB4A8238e69";
-    const llmDriftContractAddress = "0xa3732054933499d6E39F216f9aecA92BA6ea28c7";
+    const llmDriftContractAddress = "0x4016B430812c44B7496BdDa04B1faf88e0298C82";
     const llmDriftContractABI = [
         "function fireBenchmarks()",
         "event BenchmarkResultAdded(uint benchmarkGroupId, string prompt, string response, uint32 score, uint32 blockTimestamp, uint64 scoreSum)",
         "function getBenchmarkGroups() external view returns ((string name, string description, address[] benchmarks,((string prompt, string response, uint32 score, uint32 blockTimestamp)[] runs, uint64 scoreSum) results)[])",
         "function addPrimeBenchmarks()",
+        "function addCountingHappyNumbersBenchmarks()",
     ];
 
     const [signer] = await ethers.getSigners();
@@ -22,10 +24,16 @@ async function runLLMDrift() {
         console.log(`Add benchmark group tx, hash: ${receipt1.hash}.\nExplorer: https://explorer.galadriel.com/transaction/${receipt1.hash}`)
     }
 
-    if (fireBenchmarks) {
-        const txResponse2 = await llmDriftContract.fireBenchmarks();
+    if (addCountingHappyNumbersBenchmarks) {
+        const txResponse2 = await llmDriftContract.addCountingHappyNumbersBenchmarks();
         const receipt2 = await txResponse2.wait();
-        console.log(`Fire benchmarks tx, hash: ${receipt2.hash}.\nExplorer: https://explorer.galadriel.com/transaction/${receipt2.hash}`)
+        console.log(`Add benchmark group tx, hash: ${receipt2.hash}.\nExplorer: https://explorer.galadriel.com/transaction/${receipt2.hash}`)
+    }
+
+    if (fireBenchmarks) {
+        const txResponse3 = await llmDriftContract.fireBenchmarks();
+        const receipt3 = await txResponse3.wait();
+        console.log(`Fire benchmarks tx, hash: ${receipt3.hash}.\nExplorer: https://explorer.galadriel.com/transaction/${receipt3.hash}`)
     }
 
     // console.log(llmDriftContract.filters.BenchmarkResultAdded());
@@ -50,6 +58,7 @@ async function runLLMDrift() {
 
             for (const run of bg.results.runs) {
                 console.log(`Run prompt: ${run.prompt}`)
+                console.log(`Run response: ${run.response}`)
                 console.log(`Run score: ${run.score}`)
                 console.log(`Run timestamp: ${run.blockTimestamp}`)
             }

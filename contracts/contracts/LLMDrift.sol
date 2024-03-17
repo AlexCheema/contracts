@@ -72,7 +72,7 @@ contract LLMDrift {
     }
 
     function addPrimeBenchmarks() public onlyOwner {
-        IBenchmark primeBenchmark7 = new PrimeBenchmark(7, true);
+        // IBenchmark primeBenchmark7 = new PrimeBenchmark(7, true);
         IBenchmark primeBenchmark8 = new PrimeBenchmark(8, false);
         IBenchmark primeBenchmark11 = new PrimeBenchmark(11, true);
         IBenchmark primeBenchmark13 = new PrimeBenchmark(13, true);
@@ -89,7 +89,7 @@ contract LLMDrift {
         newGroup.results.scoreSum = 0;
 
         // Allocate space for benchmarks in storage
-        newGroup.benchmarks.push(primeBenchmark7);
+        // newGroup.benchmarks.push(primeBenchmark7);
         newGroup.benchmarks.push(primeBenchmark8);
         newGroup.benchmarks.push(primeBenchmark11);
         newGroup.benchmarks.push(primeBenchmark13);
@@ -97,7 +97,38 @@ contract LLMDrift {
         newGroup.benchmarks.push(primeBenchmark51763);
         newGroup.benchmarks.push(primeBenchmark86677);
     }
+    function addCountingHappyNumbersBenchmarks() public onlyOwner {
+        IBenchmark happyNumbersBenchmark0 = new CountingHappyNumbersBenchmark(8720, 8725, 1);
+        // IBenchmark happyNumbersBenchmark1 = new CountingHappyNumbersBenchmark(5266, 5283, 7);
+        // IBenchmark happyNumbersBenchmark2 = new CountingHappyNumbersBenchmark(4571, 4575, 2);
+        // IBenchmark happyNumbersBenchmark3 = new CountingHappyNumbersBenchmark(852, 877, 3);
+        // IBenchmark happyNumbersBenchmark4 = new CountingHappyNumbersBenchmark(4564, 4580, 3);
+        // IBenchmark happyNumbersBenchmark5 = new CountingHappyNumbersBenchmark(4598, 4601, 1);
+        // IBenchmark happyNumbersBenchmark6 = new CountingHappyNumbersBenchmark(1184, 1185, 2);
+        // IBenchmark happyNumbersBenchmark7 = new CountingHappyNumbersBenchmark(1112, 1138, 7);
+        // IBenchmark happyNumbersBenchmark8 = new CountingHappyNumbersBenchmark(2849, 2855, 3);
+        // IBenchmark happyNumbersBenchmark9 = new CountingHappyNumbersBenchmark(1772, 1778, 1);
 
+        // Create a new BenchmarkGroup directly in storage
+        BenchmarkGroup storage newGroup = benchmarkGroups.push();
+
+        // Initialize the BenchmarkResults struct within the new storage element
+        newGroup.name = "Counting Happy Numbers";
+        newGroup.description = "Test the LLMs ability to count the number of happy numbers in a given range.";
+        newGroup.results.scoreSum = 0;
+
+        // Allocate space for benchmarks in storage
+        newGroup.benchmarks.push(happyNumbersBenchmark0);
+        // newGroup.benchmarks.push(happyNumbersBenchmark1);
+        // newGroup.benchmarks.push(happyNumbersBenchmark2);
+        // newGroup.benchmarks.push(happyNumbersBenchmark3);
+        // newGroup.benchmarks.push(happyNumbersBenchmark4);
+        // newGroup.benchmarks.push(happyNumbersBenchmark5);
+        // newGroup.benchmarks.push(happyNumbersBenchmark6);
+        // newGroup.benchmarks.push(happyNumbersBenchmark7);
+        // newGroup.benchmarks.push(happyNumbersBenchmark8);
+        // newGroup.benchmarks.push(happyNumbersBenchmark9);
+    }
 
     function addBenchmarkGroup(BenchmarkGroup calldata benchmarkGroup) public onlyOwner {
         benchmarkGroups.push(benchmarkGroup);
