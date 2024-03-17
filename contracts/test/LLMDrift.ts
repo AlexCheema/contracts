@@ -92,6 +92,68 @@ const tests: BenchmarkTests[] = [
         expectedScore: 0,
       },
     ]
+  },
+  {
+    desc: "Test a prime number",
+    contractName: "CountingHappyNumbersBenchmark",
+    deployArgs: [3904, 3912, 2],
+    tableTests: [
+      {
+        desc: "prompt correct",
+
+        expectedPrompt: `How many happy numbers are there between ${3904} and ${3912}? Think step by step and then answer within "\\boxed" (e.g, \\boxed{10}).`
+      },
+      {
+        desc: "description correct",
+
+        expectedDescription: `Evaluates the LLM to count the number of happy numbers between ${3904} and ${3912}.`
+      },
+      {
+        desc: "id correct",
+
+        expectedId: `CountingHappyNumbersBenchmark${3904}To${3912}Is${2}`
+      },
+      {
+        desc: "Correct answer with \\boxed gives score 100",
+
+        prompt: "",
+        response: "\\boxed{2}",
+
+        expectedScore: 100,
+      },
+      {
+        desc: "Correct \\boxed with other stuff around it gives score 100",
+
+        prompt: "",
+        response: "dwajsi\\boxed{2}fjsdkljfkdslj2 h u21j ",
+
+        expectedScore: 100,
+      },
+      {
+        desc: "Incorrect answer with \\boxed gives score 0",
+
+        prompt: "",
+        response: "\\boxed{23}",
+
+        expectedScore: 0,
+      },
+      {
+        desc: "Empty string gives 0",
+
+        prompt: "",
+        response: "",
+
+        expectedScore: 0,
+      },
+      {
+        desc: "Gibberish gives 0",
+
+        prompt: "",
+        response: "[gibberish]\\box\\boxed{[]",
+
+        expectedScore: 0,
+      },
+    ]
   }
 ]
 

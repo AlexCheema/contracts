@@ -231,3 +231,74 @@ contract PrimeBenchmark is IBenchmark {
         return false;
     }
 }
+
+contract CountingHappyNumbersBenchmark is IBenchmark {
+    uint public startN;
+    uint public endN;
+    uint public numHappyNumbers;
+
+    constructor(uint _startN, uint _endN, uint _numHappyNumbers) {
+        startN = _startN;
+        endN = _endN;
+        numHappyNumbers = _numHappyNumbers;
+    }
+
+    function prompt() public view returns (string memory) {
+        return string(abi.encodePacked("How many happy numbers are there between ", uintToString(startN), " and ", uintToString(endN), "? Think step by step and then answer within \"\\boxed\" (e.g, \\boxed{10})."));
+    }
+
+    function description() external view override returns (string memory) {
+        return string(abi.encodePacked("Evaluates the LLM to count the number of happy numbers between ", uintToString(startN), " and ", uintToString(endN), "."));
+    }
+
+    function id() external view override returns (string memory) {
+        return string(abi.encodePacked("CountingHappyNumbersBenchmark", uintToString(startN), "To", uintToString(endN), "Is", uintToString(numHappyNumbers)));
+    }
+
+    function evaluate(string memory prompt, string memory response) public view returns (uint32) {
+        if (contains(response, string(abi.encodePacked("\\boxed{", uintToString(numHappyNumbers), "}")))) {
+            return 100;
+        }
+        return 0;
+    }
+
+    function uintToString(uint v) private pure returns (string memory str) {
+        if (v == 0) {
+            return "0";
+        }
+        uint maxlength = 100;
+        bytes memory reversed = new bytes(maxlength);
+        uint i = 0;
+        while (v != 0) {
+            uint remainder = v % 10;
+            v = v / 10;
+            reversed[i++] = bytes1(uint8(48 + remainder));
+        }
+        bytes memory s = new bytes(i);
+        for (uint j = 0; j < i; j++) {
+            s[j] = reversed[i - 1 - j];
+        }
+        str = string(s);
+    }
+
+    function contains(string memory haystack, string memory needle) private pure returns (bool) {
+        bytes memory b = bytes(haystack);
+        bytes memory a = bytes(needle);
+        if(a.length > b.length) {
+            return false;
+        }
+        for(uint i = 0; i <= b.length - a.length; i++) {
+            bool found = true;
+            for(uint j = 0; j < a.length; j++) {
+                if(b[i + j] != a[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if(found) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
